@@ -14,23 +14,34 @@ void press_release_event(const uint8_t pin, void (*f)(void*), void* arg) {
 	}
 }
 
-void init_btn(t_btn* btn, volatile uint8_t* port_ptr, uint8_t pin, t_btn_handler handler, void* handler_arg) {
+void init_btn(t_btn*            btn,
+              volatile uint8_t* port_ptr,
+              uint8_t           pin,
+              t_btn_handler     press_handler,
+              void*             press_arg,
+              t_btn_handler     lift_handler,
+              void*             lift_arg) {
 	btn->port_ptr = port_ptr;
 	btn->pin = pin;
 	btn->count = 0;
-	btn->state = 1;
-	btn->handler = handler;
-	btn->handler_arg = handler_arg;
+	btn->state = LIFTED;
+	btn->press_handler = press_handler;
+	btn->press_arg = press_arg;
+	btn->lift_handler = lift_handler;
+	btn->lift_arg = lift_arg;
 }
 
-void btn_poll(t_btn *btn) {
+void btn_poll(t_btn* btn) {
 	if (read_pin(*btn->port_ptr, btn->pin) == btn->state)
 		btn->count = 0;
-	else
+	else if (btn->count < BTN_COUNT_THRESHOLD)
 		++btn->count;
-	if (btn->count == BTN_COUNT_THRESHOLD) {
+	else if (btn->count == BTN_COUNT_THRESHOLD) {
 		btn->state ^= 1;
-		if (btn->state == 0)
-			btn->handler(btn->handler_arg);
+		if (btn->state == PRESSED && btn->press_handler)
+			btn->press_handler(btn->press_arg);
+		if (btn->state == LIFTED && btn->lift_handler)
+			btn->lift_handler(btn->lift_arg);
+		++btn->count;
 	}
 }

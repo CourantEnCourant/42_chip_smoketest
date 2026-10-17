@@ -14,10 +14,21 @@ typedef struct s_btn {
 	volatile uint8_t* port_ptr;
 	uint8_t           pin;
 	uint8_t           count;
-	uint8_t           state;
-	t_btn_handler     handler;
-	void*             handler_arg;
+	enum e_btn_state {
+		PRESSED = 0,
+		LIFTED = 1,
+	} state;
+	t_btn_handler press_handler;
+	void*         press_arg;
+	t_btn_handler lift_handler;
+	void*         lift_arg;
 } t_btn;
 
-void init_btn(t_btn* btn, volatile uint8_t* port_ptr, uint8_t pin, t_btn_handler handler, void* handler_arg);
-void btn_poll(t_btn *btn);
+void init_btn(t_btn*            btn,
+              volatile uint8_t* port_ptr,
+              uint8_t           pin,
+              t_btn_handler     press_handler,
+              void*             handler_arg,
+              t_btn_handler     lift_handler,
+              void*             lift_arg);
+void btn_poll(t_btn* btn);
