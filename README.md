@@ -1,1 +1,0 @@
-# 42_chip_smoketest
