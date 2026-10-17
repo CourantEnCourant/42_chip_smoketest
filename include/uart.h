@@ -15,3 +15,4 @@ void uart_printstr(const char str[]);
 char uart_rx(void);
 void uart_tx(char c);
 void uart_tx_only_printable(char c);
+void print_2digit(uint8_t n);
