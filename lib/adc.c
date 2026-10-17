@@ -6,8 +6,6 @@
 #include "pin.h"
 
 void adc_init() {
-	// Ref voltage on AVCC
-	set_bit(ADMUX, REFS0);
 	// 10 bit representation
 	// Prescaler 128
 	set_bit(ADCSRA, ADPS2);
