@@ -26,7 +26,7 @@
 #define SW1                  PD2
 #define SW2                  PD4
 
-#define set_bit(sfr, bit)    ((sfr) |= (1 << (bit)))
-#define clear_bit(sfr, bit)  ((sfr) &= ~(1 << (bit)))
-#define toggle_bit(sfr, bit) ((sfr) ^= (1 << (bit)))
-#define read_pin(sfr, bit)   ((sfr & 1 << bit) >> bit)
+#define set_bit(reg, bit)    ((reg) |= (uint8_t)(1U << (bit)))
+#define clear_bit(reg, bit)  ((reg) &= (uint8_t)~(1U << (bit)))
+#define toggle_bit(reg, bit) ((reg) ^= (uint8_t)(1U << (bit)))
+#define read_pin(reg, bit)   ((uint8_t)(((reg) >> (bit)) & 1U))
