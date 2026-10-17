@@ -2,15 +2,16 @@
 
 #include <avr/io.h>
 
-void uart_printstr(const char str[]);
-char uart_rx();
-void uart_tx(char c);
-
 #ifndef F_CPU
 # define F_CPU 16000000UL
 #endif
 
+// async double speed mode (U2X0), table 20-7: error ~2.1%
 #define UART_BAUDRATE 115200
 #define UBRR_VALUE    (F_CPU / (8 * UART_BAUDRATE) - 1)
-#define set_ubrr() UBRR0H = UBRR_VALUE >> 8; \
-							UBRR0L = UBRR_VALUE;
+
+void uart_init(void);
+void uart_printstr(const char str[]);
+char uart_rx(void);
+void uart_tx(char c);
+void uart_tx_only_printable(char c);
