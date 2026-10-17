@@ -6,13 +6,13 @@ void get_time(t_time *t) {
     i2c_write(0x02);
     i2c_start();
     i2c_write(PCF8563_ADDR << 1 | READ);
-    t->sec = i2c_read_byte(0);
-    t->min = i2c_read_byte(0);
-    t->hour = i2c_read_byte(0);
-    t->day = i2c_read_byte(0);
-    t->weekday = i2c_read_byte(0);
-    t->month = i2c_read_byte(0);
-    t->year = i2c_read_byte(1);
+    t->sec = i2c_read_byte(1);
+    t->min = i2c_read_byte(1);
+    t->hour = i2c_read_byte(1);
+    t->day = i2c_read_byte(1);
+    t->weekday = i2c_read_byte(1);
+    t->month = i2c_read_byte(1);
+    t->year = i2c_read_byte(0);
     i2c_stop();
 
     // convert BCD
@@ -55,4 +55,50 @@ void print_time(t_time *t) {
     print_2digit(t->min);
     uart_tx(':');
     print_2digit(t->sec);
+}
+
+static uint8_t is_input_valid(const char *str) {
+    if (ft_strlen(str) != 19) {
+        return 0;
+    }
+    if (!(is_all_digit(str, 2) && is_all_digit(str+3, 2) 
+        && is_all_digit(str+6, 4) && is_all_digit(str+11, 2)
+        && is_all_digit(str+14, 2) && is_all_digit(str+17, 2))) {
+        return 0;
+    }
+    if (str[2] != '/' || str[5] != '/') {
+        return 0;
+    }
+    if (str[10] != ' ') {
+        return 0;
+    }
+    if (str[13] != ':' || str[16] != ':') {
+        return 0;
+    }
+    return 1;
+}
+
+uint8_t parse_time(const char *str, t_time *t) {
+    if (!is_input_valid(str)) {
+        uart_printstr("Error: invalid input\r\n");
+        return 0;
+    }
+    t->day = ft_atoi(str);
+    t->month = ft_atoi(str+3);
+    uint16_t year = ft_atoi(str+6);
+    t->hour = ft_atoi(str+11);
+    t->min = ft_atoi(str+14);
+    t->sec = ft_atoi(str+17);
+
+    if (!is_valid_date(t->day, t->month, t->year)) {
+        uart_printstr("Error: invalid date\r\n");
+        return 0;
+    }
+    if (t->hour >= 24 || t->min >= 60 || t->sec >= 60) {
+        uart_printstr("Error: invalid time\r\n");
+        return 0;
+    }
+    // TODO: use century to store year
+    t->year = year % 100;
+    return 1;
 }

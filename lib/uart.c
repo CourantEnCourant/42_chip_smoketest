@@ -44,3 +44,12 @@ void print_2digit(uint8_t n) {
     uart_tx('0' + n / 10);
     uart_tx('0' + n % 10);
 }
+
+void uart_putnbr(int n) {
+    if (n < 10) {
+        uart_tx('0' + n);
+        return;
+    }
+    uart_putnbr(n / 10);
+    uart_tx('0' + n % 10);
+}
