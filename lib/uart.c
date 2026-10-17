@@ -39,3 +39,8 @@ void uart_tx_only_printable(char c) {
 	if (c >= 32 && c <= 126)
 		uart_tx(c);
 }
+
+void print_2digit(uint8_t n) {
+    uart_tx('0' + n / 10);
+    uart_tx('0' + n % 10);
+}
