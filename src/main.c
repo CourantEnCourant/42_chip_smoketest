@@ -3,6 +3,7 @@
 #include "pin.h"
 
 int main() {
+	// hello
 	set_bit(LED_DDR, D1);
 	set_bit(LED_PORT, D1);
 	while (1);
