@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "adc.h"
 #include "button.h"
 #include "display.h"
 #include "ft_interrupt.h"
@@ -29,6 +30,7 @@ int main() {
 		uart_printstr("display_init failed\r\n");
 
 	led_setup();
+	adc_init();
 	timer1_interrupt_init();
 	init_btn(&s1_btn, &SWITCH_PIN, SW1, (t_btn_handler)sw1_press_handler, &mode, NULL, NULL);
 	init_btn(&s2_btn, &SWITCH_PIN, SW2, (t_btn_handler)sw2_press_handler, &mode, NULL, NULL);
