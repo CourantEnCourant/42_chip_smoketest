@@ -6,3 +6,4 @@
 	__attribute__((signal, used, externally_visible)) void VECT()
 
 #define ft_sei() (SREG |= 1 << SREG_I)
+#define ft_cli() (SREG &= ~(1 << SREG_I))
