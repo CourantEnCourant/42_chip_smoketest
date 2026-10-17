@@ -2,6 +2,7 @@
 
 #include "i2c.h"
 #include "uart.h"
+#include "utils.h"
 
 #define PCF8563_ADDR 0x51
 
@@ -18,3 +19,4 @@ typedef struct s_time {
 void get_time(t_time *t);
 void set_time(t_time *t);
 void print_time(t_time *t);
+uint8_t parse_time(const char *str, t_time *t);
