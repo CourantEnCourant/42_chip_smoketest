@@ -31,4 +31,7 @@ void init_btn(t_btn*            btn,
               void*             handler_arg,
               t_btn_handler     lift_handler,
               void*             lift_arg);
-void btn_poll(t_btn* btn);
+
+void btn_poll_accessible(t_btn* btn);
+void btn_poll(t_btn* btn, uint8_t pin_state);
+

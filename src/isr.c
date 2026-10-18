@@ -13,8 +13,8 @@ extern t_btn   s2_btn;
 extern uint8_t mode;
 
 FT_ISR(TIMER1_COMPA_vect) {
-	btn_poll(&s1_btn);
-	btn_poll(&s2_btn);
+	btn_poll_accessible(&s1_btn);
+	btn_poll_accessible(&s2_btn);
 	if (mode == 0) {
 		// Ref voltage on AVCC
 		clear_bit(ADMUX, REFS1);
