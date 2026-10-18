@@ -132,7 +132,6 @@ int main() {
 					set_time(&t);
 				}
 				uart_printstr("update date (dd/mm/yyyy hh:mm:ss) : ");
-				input_complete = 0;
 			}
 		}
 	}
