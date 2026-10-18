@@ -45,6 +45,19 @@ FT_ISR(USART_RX_vect) {
 t_btn   s1_btn;
 t_btn   s2_btn;
 uint8_t mode = 0;
+t_btn                    s1_btn;
+t_btn                    s2_btn;
+volatile uint8_t         mode = 0;
+extern volatile uint32_t ticks;
+
+static uint32_t get_ticks_atomist(void) {
+	uint8_t  sreg = SREG;
+	uint32_t t;
+	ft_cli();
+	t = ticks;
+	SREG = sreg;
+	return t;
+}
 
 int main() {
 	uint8_t input_complete = 0;
@@ -144,7 +157,24 @@ int main() {
 				uart_tx(c);
 			}
 		}
+
+	enum e_main_state main_state = INIT;
+	display_set_number(8888);
 	while (1) {
+		if (main_state == INIT) {
+			uint32_t t = get_ticks_atomist();
+			if (t >= 2000) {
+				main_state = HOTPATH;
+				led_display_mode(mode);
+				continue;
+			}
+			if (t < 1500) {
+				led_all_lights_on();
+				display_refresh();
+			} else
+				led_all_lights_off();
+			continue;
+		}
 		if (mode == 0) {
 			// Ref voltage on AVCC
 			clear_bit(ADMUX, REFS1);
