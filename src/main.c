@@ -60,9 +60,11 @@ int main(void) {
 	app_init();
 	timer1_interrupt_init();
 	ft_sei();
+	uart_printstr("update date (dd/mm/yyyy hh:mm:ss) : ");
 	while (1) {
 		i2c_routine_async();
 		pca_routine_async();
+		uart_input_routine();
 		if (take_tick()) {
 			i2c_monitor_async();
 			display_tick();
