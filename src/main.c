@@ -12,6 +12,7 @@
 #include "led.h"
 #include "pca_async.h"
 #include "uart.h"
+#include "spi.h"
 
 extern volatile uint8_t g_ticks_2ms;
 
@@ -59,6 +60,7 @@ int main(void) {
 	display_init();
 	app_init();
 	timer1_interrupt_init();
+	spi_init();
 	ft_sei();
 	uart_printstr("update date (dd/mm/yyyy hh:mm:ss) : ");
 	while (1) {
