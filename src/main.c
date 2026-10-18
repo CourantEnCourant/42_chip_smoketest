@@ -58,6 +58,24 @@ static uint32_t get_ticks_atomist(void) {
 	SREG = sreg;
 	return t;
 }
+#define SIZE 64
+
+static void led_setup() {
+	set_bit(LED_DDR, D1);
+	set_bit(LED_DDR, D2);
+	set_bit(LED_DDR, D3);
+	set_bit(LED_DDR, D4);
+}
+
+volatile uint8_t rx_complete = 0;
+
+FT_ISR(USART_RX_vect) {
+	rx_complete = 1;
+}
+
+t_btn   s1_btn;
+t_btn   s2_btn;
+uint8_t mode = 0;
 
 int main() {
 	uint8_t input_complete = 0;
@@ -214,5 +232,22 @@ int main() {
 		} else
 			display_set_number(8888);
 		display_refresh();
+	uart_printstr("input date :");
+	while (1) {
+		if (rx_complete) {
+			char c = UDR0;
+			if (c == '\r' || i == SIZE - 1) {// end of input
+				buf[i] = '\0';
+				input_complete = 1;
+			} else if (c == 127 && i > 0) {  // delete char
+				uart_tx('\b');
+				uart_tx(' ');
+				uart_tx('\b');
+				i--;
+			} else if (32 <= c && c < 127) { // if printable
+				buf[i++] = c;
+				uart_tx(c);
+			}
+		}
 	}
 }
