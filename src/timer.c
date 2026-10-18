@@ -1,18 +1,17 @@
 #include <avr/io.h>
-
 #include "main.h"
+#include "ft_interrupt.h"
 
-void timer1_interrupt_init() {
-	// power reduction reg
-	PRR &= ~(1 << PRTIM1);
-
+void timer1_interrupt_init(void)
+{
+	PRR &= (uint8_t)~_BV(PRTIM1);
+	TCCR1A = 0;
+	TCCR1B = 0;
 	TCNT1 = 0;
-	OCR1A = 499;
-	// OCR1A = 499; //  2 ms
 
-	TIFR1 = (1 << OCF1A);
-	TIMSK1 = (1 << OCIE1A);
-
-	TCCR1B = (1 << WGM12);  // mode 4 ctc
-	TCCR1B |= (1 << CS11) | (1 << CS10);
+	// 2ms
+	OCR1A = (F_CPU / (64UL * 500UL)) - 1UL;
+	TIFR1 = _BV(OCF1A);
+	TIMSK1 = _BV(OCIE1A);
+	TCCR1B = _BV(WGM12) | _BV(CS11) | _BV(CS10);
 }

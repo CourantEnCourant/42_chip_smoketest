@@ -28,7 +28,6 @@ ELF				= main.elf
 HEX				= main.hex
 ASM				= main.s
 
-all: flash
 
 hex: $(HEX)
 

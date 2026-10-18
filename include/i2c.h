@@ -65,8 +65,8 @@ bool			i2c_write_async(uint8_t addr, uint8_t reg, uint8_t value);
 bool			i2c_read_async(uint8_t addr, uint8_t reg);
 // try to call as much as possible to ensure the flow
 void			i2c_routine_async(void);
-// check progress
-void			i2c_monitor_async(void);
+// check progress and called every 2 ms
+void			i2c_tick(void);
 // utils
 bool			i2c_is_busy_async(void);
 e_i2c_result	i2c_result_async(void);

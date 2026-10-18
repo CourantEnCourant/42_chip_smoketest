@@ -165,7 +165,7 @@ void				i2c_routine_async(void)
 	SREG = saved_sreg;
 }
 
-void				i2c_monitor_async(void)
+void				i2c_tick(void)
 {
 	uint8_t saved_sreg = SREG;
 	ft_cli();
@@ -181,10 +181,10 @@ void				i2c_monitor_async(void)
 				case error TIMEOUT stop evryting, might need a 
 				maunal rest but at least we stop the FSM
 			*/
-		TWCR = 0;
-		TWCR = _BV(TWEN);
-		g_i2c.phase = PHASE_I2C_IDLE;
-		g_i2c.status = 0xFF; // defined as timout;
+			TWCR = 0;
+			TWCR = _BV(TWEN);
+			g_i2c.phase = PHASE_I2C_IDLE;
+			g_i2c.status = 0xFF; // defined as timout;
 		}
 	}
 	else

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "button.h"
+
 #include <avr/io.h>
 
 #define LED_PORT             PORTB

@@ -8,6 +8,7 @@
 #define is_pressed(sfr, pin) (bit_is_clear(sfr, pin))
 
 typedef void (*t_btn_handler)(void*);
+
 void press_release_event(const uint8_t pin, t_btn_handler, void* handler_arg);
 
 typedef struct s_btn {
