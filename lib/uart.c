@@ -3,6 +3,17 @@
 #include <avr/io.h>
 #include <stdint.h>
 
+#include "ft_interrupt.h"
+#include "pin.h"
+#include "rb.h"
+
+static void uart_tx_blocking(char c) {
+	loop_until_bit_is_set(UCSR0A, UDRE0);
+	UDR0 = c;
+}
+
+static t_rb transmit_rb = {.f = uart_tx_blocking};
+
 void uart_init(void) {
 	// 20.2 power reduction register
 	PRR &= ~(1 << PRUSART0);
@@ -29,8 +40,12 @@ char uart_rx(void) {
 }
 
 void uart_tx(char c) {
-	while (bit_is_clear(UCSR0A, UDRE0));
-	UDR0 = c;
+	uint8_t sreg = SREG;
+	ft_cli();
+	rb_push(&transmit_rb, c);
+	// Kick the UDRE interrupt, the ISR drains the buffer
+	set_bit(UCSR0B, UDRIE0);
+	SREG = sreg;
 }
 
 void uart_tx_only_printable(char c) {
@@ -53,4 +68,13 @@ void uart_putuint(uint32_t n) {
 	}
 	uart_putuint(n / 10);
 	uart_tx('0' + n % 10);
+}
+
+FT_ISR(USART_UDRE_vect) {
+	char c = rb_pop_front(&transmit_rb);
+	if (c == '\0') {
+		clear_bit(UCSR0B, UDRIE0);
+		return;
+	}
+	UDR0 = c;
 }
