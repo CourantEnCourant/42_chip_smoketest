@@ -70,13 +70,6 @@ void display_service(void)
 	switch (g_state)
 	{
 		case DISPLAY_IDLE:
-
-			if (g_refresh_due && pca_button_start_async())
-			{
-				g_refresh_due = false;
-				g_state = DISPLAY_WAIT_BUTTON;
-				return;
-			}
 			// no tick
 			if (!g_refresh_due)
 				return ;
@@ -93,11 +86,10 @@ void display_service(void)
 			return ;
 
 		case DISPLAY_WAIT_BUTTON:
-		    if (!pca_button_capture_async())
-				g_state = DISPLAY_ERROR;
-			else
-				g_state = DISPLAY_IDLE;
-			return ;
+			if (pca_busy_async())
+				return;
+			g_state = pca_button_capture_async() ? DISPLAY_IDLE : DISPLAY_ERROR;
+			return;
 
 		case DISPLAY_WAIT_OFF:
 			if (pca_busy_async())
@@ -144,7 +136,10 @@ void display_service(void)
 			// modulo 4
 			g_slot = (g_slot + 1) & 0x03;
 			// set new state idle can take new number in
-			g_state = DISPLAY_IDLE;
+			if (g_slot == 0 && pca_button_start_async())
+				g_state = DISPLAY_WAIT_BUTTON;
+			else
+				g_state = DISPLAY_IDLE;
 			return;
 
 		case DISPLAY_ERROR:

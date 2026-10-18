@@ -93,8 +93,8 @@ int main(void)
 			{
 				btn_poll(&g_sw3, pca_sw3_pressed_async() ? PRESSED : LIFTED);
 			}
-			pca_single_led_set_async(1, 1);
-			pca_write_cathodes_async(0);
+			// pca_single_led_set_async(1, 1);
+			// pca_write_cathodes_async(0);
 		}
 
 		app_service();
