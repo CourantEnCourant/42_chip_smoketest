@@ -6,6 +6,9 @@
 #include "ft_interrupt.h"
 #include "pin.h"
 #include "rb.h"
+#include "date.h"
+
+#define SIZE 64
 
 static void uart_tx_blocking(char c) {
 	loop_until_bit_is_set(UCSR0A, UDRE0);
@@ -27,6 +30,8 @@ void uart_init(void) {
 	UCSR0B = (1 << RXEN0) | (1 << TXEN0);
 	// 8 bit frame
 	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+	// enable rx interrupt
+	UCSR0B |= (1 << RXCIE0);
 }
 
 void uart_printstr(const char str[]) {
@@ -77,4 +82,48 @@ FT_ISR(USART_UDRE_vect) {
 		return;
 	}
 	UDR0 = c;
+}
+
+volatile uint8_t rx_complete = 0;
+
+FT_ISR(USART_RX_vect) {
+	rx_complete = 1;
+}
+
+static uint8_t uart_add_to_buf(char *buf, uint16_t size, uint16_t *i) {
+	char c = UDR0;
+	if (c == '\r' || *i == size - 1) {// end of input
+		buf[*i] = '\0';
+		*i = 0;
+		return 1;
+	} else if (c == 127 && *i > 0) {  // delete char
+		uart_tx('\b');
+		uart_tx(' ');
+		uart_tx('\b');
+		*i -= 1;
+	} else if (32 <= c && c < 127) { // if printable
+		buf[*i] = c;
+		uart_tx(c);
+		*i += 1;
+	}
+	return 0;
+}
+
+char buf[SIZE];
+uint16_t i = 0;
+
+void uart_input_routine(void) {
+	if (rx_complete) {
+		uint8_t input_complete = uart_add_to_buf(buf, SIZE, &i);
+		rx_complete = 0;
+
+		if (input_complete) {
+			uart_printstr("\r\n");
+			t_time t = {0};
+			if (parse_time(buf, &t)) {
+				set_time(&t);
+			}
+			uart_printstr("update date (dd/mm/yyyy hh:mm:ss) : ");
+		}
+	}
 }
