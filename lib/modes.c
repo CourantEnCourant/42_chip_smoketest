@@ -4,34 +4,27 @@
 #include <stdbool.h>
 
 #include "adc.h"
+#include "aht20.h"
 #include "app.h"
 #include "date.h"
 #include "display.h"
 #include "i2c.h"
 #include "pca.h"
 #include "spi.h"
-#include "aht20.h"
 
 typedef void (*t_mode_callback)(uint8_t);
 
-typedef struct s_mode_ops
-{
+typedef struct s_mode_ops {
 	t_mode_callback enter;
 	t_mode_callback tick;
 	t_mode_callback service;
 	t_mode_callback leave;
-}				t_mode_ops;
+} t_mode_ops;
 
-static void mode_pending_enter(uint8_t mode)
-{
-	display_set_number(mode);
-}
-
-static void mode_4_enter(uint8_t mode)
-{
+static void mode_4_enter(uint8_t mode) {
 	(void)mode;
 
-	const uint8_t segments[4] = {PCA16_G,SEG_FOUR,SEG_TWO,PCA16_G};
+	const uint8_t segments[4] = {PCA16_G, SEG_FOUR, SEG_TWO, PCA16_G};
 
 	apa102_start();
 	apa102_color_rgb(B_LOW, RED);
@@ -43,21 +36,18 @@ static void mode_4_enter(uint8_t mode)
 }
 
 static uint16_t val = 0;
-static uint8_t color_id = 1;
+static uint8_t  color_id = 1;
 
-static void mode_4_2ms(uint8_t mode)
-{
+static void mode_4_2ms(uint8_t mode) {
 	(void)mode;
 
-
-	if (val != 500)
-	{
+	if (val != 500) {
 		val++;
-		return ;
+		return;
 	}
 
-	uint32_t		color_array[3] = { RED , GREEN , BLUE };
-	uint32_t		color = color_array[color_id];
+	uint32_t color_array[3] = {RED, GREEN, BLUE};
+	uint32_t color = color_array[color_id];
 
 	val = 0;
 	apa102_start();
@@ -72,8 +62,7 @@ static void mode_4_2ms(uint8_t mode)
 	color_id %= 3;
 }
 
-static void mode_4_exit(uint8_t mode)
-{
+static void mode_4_exit(uint8_t mode) {
 	(void)mode;
 	color_id = 1;
 	val = 0;
@@ -88,19 +77,17 @@ static void mode_4_exit(uint8_t mode)
 
 // reference + channel for each ADC mode
 static const uint8_t g_adc_mux[4] = {
-	_BV(REFS0),							// 0 RV1  AVCC, ADC0
-	_BV(REFS0) | _BV(MUX0),				// 1 LDR  AVCC, ADC1
-	_BV(REFS0) | _BV(MUX1),				// 2 NTC  AVCC, ADC2
-	_BV(REFS1) | _BV(REFS0) | _BV(MUX3)	// 3 MCU temp 1.1V, ADC8
+	_BV(REFS0),                          // 0 RV1  AVCC, ADC0
+	_BV(REFS0) | _BV(MUX0),              // 1 LDR  AVCC, ADC1
+	_BV(REFS0) | _BV(MUX1),              // 2 NTC  AVCC, ADC2
+	_BV(REFS1) | _BV(REFS0) | _BV(MUX3)  // 3 MCU temp 1.1V, ADC8
 };
 
-static void mode_adc_enter(uint8_t mode)
-{
+static void mode_adc_enter(uint8_t mode) {
 	ADMUX = g_adc_mux[mode];
 }
 
-static void mode_adc_tick(uint8_t mode)
-{
+static void mode_adc_tick(uint8_t mode) {
 	if (mode == 3)
 		display_set_number((get_adc() - T_OS) / K);
 	else
@@ -109,25 +96,24 @@ static void mode_adc_tick(uint8_t mode)
 
 /* RTC modes 8..10, PCF8563 read through the async i2c */
 
-#define RTC_POLL_TICKS	50u	// 50 * 2ms = 100ms
+#define RTC_POLL_TICKS 50u  // 50 * 2ms = 100ms
 
-#define PCF_MINUTES	0x03
-#define PCF_HOURS	0x04
-#define PCF_DAYS	0x05
-#define PCF_MONTHS	0x07
-#define PCF_YEARS	0x08
+#define PCF_MINUTES    0x03
+#define PCF_HOURS      0x04
+#define PCF_DAYS       0x05
+#define PCF_MONTHS     0x07
+#define PCF_YEARS      0x08
 
-typedef struct s_rtc_view
-{
-	uint8_t count;		// registers to read, right aligned on the display
+typedef struct s_rtc_view {
+	uint8_t count;  // registers to read, right aligned on the display
 	uint8_t reg[2];
-	uint8_t mask[2];	// drop the non BCD flag bits
-}				t_rtc_view;
+	uint8_t mask[2];  // drop the non BCD flag bits
+} t_rtc_view;
 
 static const t_rtc_view g_rtc_views[3] = {
-	{2, {PCF_HOURS, PCF_MINUTES}, {0x3F, 0x7F}},	// 8  hh mm
-	{2, {PCF_DAYS, PCF_MONTHS}, {0x3F, 0x1F}},		// 9  dd mm
-	{1, {PCF_YEARS}, {0xFF}}						// 10 20 yy
+	{2, {PCF_HOURS, PCF_MINUTES}, {0x3F, 0x7F}},  // 8  hh mm
+	{2, {PCF_DAYS, PCF_MONTHS}, {0x3F, 0x1F}},    // 9  dd mm
+	{1, {PCF_YEARS}, {0xFF}}                      // 10 20 yy
 };
 
 static struct
@@ -135,22 +121,19 @@ static struct
 	uint8_t bcd[2];
 	uint8_t idx;
 	uint8_t elapsed;
-	bool	due;
-	bool	waiting;
-}	g_rtc;
+	bool    due;
+	bool    waiting;
+} g_rtc;
 
-static void rtc_show(void)
-{
+static void rtc_show(void) {
 	const uint8_t digits[4] = {
 		g_rtc.bcd[0] >> 4, g_rtc.bcd[0] & 0x0F,
-		g_rtc.bcd[1] >> 4, g_rtc.bcd[1] & 0x0F
-	};
+		g_rtc.bcd[1] >> 4, g_rtc.bcd[1] & 0x0F};
 
 	display_set_digits(digits);
 }
 
-static void mode_rtc_enter(uint8_t mode)
-{
+static void mode_rtc_enter(uint8_t mode) {
 	(void)mode;
 
 	// a read still in flight from the previous mode is dropped
@@ -164,31 +147,26 @@ static void mode_rtc_enter(uint8_t mode)
 	display_clear();
 }
 
-static void mode_rtc_tick(uint8_t mode)
-{
+static void mode_rtc_tick(uint8_t mode) {
 	(void)mode;
 
-	if (++g_rtc.elapsed >= RTC_POLL_TICKS)
-	{
+	if (++g_rtc.elapsed >= RTC_POLL_TICKS) {
 		g_rtc.elapsed = 0;
 		g_rtc.due = true;
 	}
 }
 
-static void mode_rtc_service(uint8_t mode)
-{
-	const t_rtc_view *view = &g_rtc_views[mode - 8];
+static void mode_rtc_service(uint8_t mode) {
+	const t_rtc_view* view = &g_rtc_views[mode - 8];
 
-	if (g_rtc.waiting)
-	{
+	if (g_rtc.waiting) {
 		if (i2c_is_busy_async())
 			return;
 
 		g_rtc.waiting = false;
 
 		// rtc missing or bus error, retry at next poll
-		if (i2c_result_async() != RES_I2C_OK)
-		{
+		if (i2c_result_async() != RES_I2C_OK) {
 			g_rtc.idx = 0;
 			g_rtc.due = false;
 			return;
@@ -196,8 +174,7 @@ static void mode_rtc_service(uint8_t mode)
 
 		g_rtc.bcd[2 - view->count + g_rtc.idx] = i2c_data_async() & view->mask[g_rtc.idx];
 
-		if (++g_rtc.idx == view->count)
-		{
+		if (++g_rtc.idx == view->count) {
 			g_rtc.idx = 0;
 			g_rtc.due = false;
 			rtc_show();
@@ -213,114 +190,104 @@ static void mode_rtc_service(uint8_t mode)
 		g_rtc.waiting = true;
 }
 
-#include "aht20.h"
-
-#define AHT_POLL_TICKS   500u   // 1 s between measurements
-#define AHT_WAIT_TICKS    40u   // 80 ms conversion time
+#define AHT_POLL_TICKS 500u  // 1 s between measurements
+#define AHT_WAIT_TICKS 40u   // 80 ms conversion time
 
 static struct {
-    int16_t  temp_x10;
-    uint16_t hum_x10;
-    uint16_t elapsed;
-    bool     waiting;   // trigger sent, conversion running
-    bool     valid;
+	int16_t  temp;
+	uint16_t hum;
+	uint16_t elapsed;
+	bool     waiting;  // trigger sent, conversion running
+	bool     valid;
 } g_aht;
 
-static void aht_show(uint8_t mode)
-{
-    if (!g_aht.valid) { display_set_number(8888); return; }  // or a "----" pattern
+static void aht_show(uint8_t mode) {
+	if (!g_aht.valid) {
+		display_set_number(8888);
+		return;
+	}  // or a "----" pattern
 
-    if (mode == 5)
-        display_set_number(g_aht.temp_x10 / 10);                  // Celsius
-    else if (mode == 6)
-        display_set_number((g_aht.temp_x10 * 9 / 5 + 320) / 10);  // Fahrenheit
-    else
-        display_set_number(g_aht.hum_x10 / 10);                   // Humidity %
+	if (mode == 5)
+		display_set_number(g_aht.temp);  // Celsius
+	else if (mode == 6)
+		display_set_number((g_aht.temp * 9 / 5 + 32));  // Fahrenheit
+	else
+		display_set_number(g_aht.hum);  // Humidity %
 }
 
-static void mode_aht_enter(uint8_t mode)
-{
-    g_aht.waiting = false;
-    g_aht.elapsed = AHT_POLL_TICKS;   // measure immediately
-    aht_show(mode);
+static void mode_aht_enter(uint8_t mode) {
+	g_aht.waiting = false;
+	g_aht.elapsed = AHT_POLL_TICKS;  // measure immediately
+	aht_show(mode);
 }
 
-static void mode_aht_tick(uint8_t mode)
-{
-    (void)mode;
-    if (g_aht.elapsed < 0xFFFF)
-        g_aht.elapsed++;
+static void mode_aht_tick(uint8_t mode) {
+	(void)mode;
+	if (g_aht.elapsed < 0xFFFF)
+		g_aht.elapsed++;
 }
 
-static void mode_aht_service(uint8_t mode)
-{
-    if (i2c_is_busy_async() || !display_bus_free())
-        return;
+static void mode_aht_service(uint8_t mode) {
+	if (i2c_is_busy_async() || !display_bus_free())
+		return;
 
-    if (!g_aht.waiting)
-    {
-        if (g_aht.elapsed < AHT_POLL_TICKS)
-            return;
-        trigger_measure();
-        g_aht.waiting = true;
-        g_aht.elapsed = 0;
-    }
-    else if (g_aht.elapsed >= AHT_WAIT_TICKS)
-    {
-        uint32_t sh, st;
-        uint8_t  status = get_mesure(&sh, &st);
+	if (!g_aht.waiting) {
+		if (g_aht.elapsed < AHT_POLL_TICKS)
+			return;
+		trigger_measure();
+		g_aht.waiting = true;
+		g_aht.elapsed = 0;
+	} else if (g_aht.elapsed >= AHT_WAIT_TICKS) {
+		uint32_t sh, st;
+		uint8_t  status = get_mesure(&sh, &st);
 
-        if (status & 0x80)            // still busy, retry at next service
-            return;
-        g_aht.temp_x10 = aht20_temp_x10(st);
-        g_aht.hum_x10  = aht20_hum_x10(sh);
-        g_aht.valid    = true;
-        g_aht.waiting  = false;
-        g_aht.elapsed  = 0;
-        aht_show(mode);
-    }
+		if (status & 0x80)  // still busy, retry at next service
+			return;
+		g_aht.temp = aht20_temp(st);
+		g_aht.hum = aht20_hum(sh);
+		g_aht.valid = true;
+		g_aht.waiting = false;
+		g_aht.elapsed = 0;
+		aht_show(mode);
+	}
 }
 
 /* to update
-	enter   : once when entering the mode
-	tick    : every 2ms while the mode is active
-	service : every main loop iteration
-	leave   : once before leaving the mode
+    enter   : once when entering the mode
+    tick    : every 2ms while the mode is active
+    service : every main loop iteration
+    leave   : once before leaving the mode
 */
 static const t_mode_ops g_modes[APP_MODE_COUNT] = {
-	{mode_adc_enter,     mode_adc_tick, 0, 0},                // 0 RV1
-	{mode_adc_enter,     mode_adc_tick, 0, 0},                // 1 LDR
-	{mode_adc_enter,     mode_adc_tick, 0, 0},                // 2 NTC
-	{mode_adc_enter,     mode_adc_tick, 0, 0},                // 3 MCU temp
-	{mode_4_enter,       0, 0, 0},                            // 4 RGB
+	{mode_adc_enter, mode_adc_tick, 0, 0},                 // 0 RV1
+	{mode_adc_enter, mode_adc_tick, 0, 0},                 // 1 LDR
+	{mode_adc_enter, mode_adc_tick, 0, 0},                 // 2 NTC
+	{mode_adc_enter, mode_adc_tick, 0, 0},                 // 3 MCU temp
+	{mode_4_enter, mode_4_2ms, 0, mode_4_exit},            // 4 RGB
 	{mode_aht_enter, mode_aht_tick, mode_aht_service, 0},  // 5 Celsius
 	{mode_aht_enter, mode_aht_tick, mode_aht_service, 0},  // 6 Fahrenheit
 	{mode_aht_enter, mode_aht_tick, mode_aht_service, 0},  // 7 Humidity
-	{mode_rtc_enter,     mode_rtc_tick, mode_rtc_service, 0}, // 8 RTC time
-	{mode_rtc_enter,     mode_rtc_tick, mode_rtc_service, 0}, // 9 Day/month
-	{mode_rtc_enter,     mode_rtc_tick, mode_rtc_service, 0}  // 10 Year
+	{mode_rtc_enter, mode_rtc_tick, mode_rtc_service, 0},  // 8 RTC time
+	{mode_rtc_enter, mode_rtc_tick, mode_rtc_service, 0},  // 9 Day/month
+	{mode_rtc_enter, mode_rtc_tick, mode_rtc_service, 0}   // 10 Year
 };
 
-void modes_enter(uint8_t mode)
-{
+void modes_enter(uint8_t mode) {
 	if (mode < APP_MODE_COUNT && g_modes[mode].enter)
 		g_modes[mode].enter(mode);
 }
 
-void modes_tick_2ms(uint8_t mode)
-{
+void modes_tick_2ms(uint8_t mode) {
 	if (mode < APP_MODE_COUNT && g_modes[mode].tick)
 		g_modes[mode].tick(mode);
 }
 
-void modes_service(uint8_t mode)
-{
+void modes_service(uint8_t mode) {
 	if (mode < APP_MODE_COUNT && g_modes[mode].service)
 		g_modes[mode].service(mode);
 }
 
-void modes_leave(uint8_t mode)
-{
+void modes_leave(uint8_t mode) {
 	if (mode < APP_MODE_COUNT && g_modes[mode].leave)
 		g_modes[mode].leave(mode);
 }

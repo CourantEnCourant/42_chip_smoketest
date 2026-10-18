@@ -27,12 +27,12 @@ uint8_t get_mesure(uint32_t *sh, uint32_t *st) {
     return status;
 }
 
-int16_t signal_to_Celsius(uint32_t st) {
-    return st / (1UL << 20) * 200 - 50;
+int16_t aht20_temp(uint32_t st) {
+    return (int16_t)((st * 200UL) >> 20) - 50;
 }
 
-uint16_t signal_to_humidity(uint32_t sh) {
-    return sh / (1UL << 20) * 100;
+int16_t aht20_hum(uint32_t sh) {
+    return (int16_t)((sh * 100UL) >> 20);
 }
 
 void calibration(void) {
