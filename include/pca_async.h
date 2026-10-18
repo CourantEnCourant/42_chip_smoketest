@@ -3,12 +3,9 @@
 
 # include <stdint.h>
 # include <stdbool.h>
-
 # include <avr/io.h>
-
 # include "i2c.h"
 # include "pca.h"
-
 
 typedef enum	enum_pca_init_state
 {
@@ -35,7 +32,6 @@ typedef struct	s_pca
 
 # define PCA_LED_MASK (PCA01_D11 | PCA02_D10 | PCA03_D9)
 # define PCA_CATHODE_MASK (PCA04_CA1 | PCA05_CA2 | PCA06_CA3 | PCA07_CA4)
-
 
 // async layder for access PCA9555
 // logical convention as polarity of PORT 0 adn PORT 1 

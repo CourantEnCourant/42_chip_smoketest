@@ -1,42 +1,49 @@
-#include <stdint.h>
-
-#include "led.h"
 #include "main.h"
 
-void sw1_press_handler(uint8_t* mode) {
-	if (*mode < 10)
-		++*mode;
-	else
-		*mode = 0;
-	led_display_mode(*mode);
-	// Light up D9
-}
+#include "app.h"
+#include "pca.h"
+#include "pca_async.h"
 
-void sw1_lift_handler(void* arg) {
+void sw1_press_handler(void *arg)
+{
 	(void)arg;
-	// Turn off D9
+
+	pca_single_led_set_async(PCA03_D9, true);
+	app_next_mode();
 }
 
-void sw2_press_handler(uint8_t* mode) {
-	if (*mode > 0)
-		--*mode;
-	else
-		*mode = 10;
-	led_display_mode(*mode);
-	// Light up D10
-}
-
-void sw2_lift_handler(void* arg) {
+void sw1_lift_handler(void *arg)
+{
 	(void)arg;
-	// Turn off D10
+
+	pca_single_led_set_async(PCA03_D9, false);
 }
 
-void sw3_press_handler(void* arg) {
+void sw2_press_handler(void *arg)
+{
 	(void)arg;
-	// Light up D11
+
+	pca_single_led_set_async(PCA02_D10, true);
+	app_prev_mode();
 }
 
-void sw3_lift_handler(void* arg) {
+void sw2_lift_handler(void *arg)
+{
 	(void)arg;
-	// Turn off D11
+
+	pca_single_led_set_async(PCA02_D10, false);
+}
+
+void sw3_press_handler(void *arg)
+{
+	(void)arg;
+
+	pca_single_led_set_async(PCA01_D11, true);
+}
+
+void sw3_lift_handler(void *arg)
+{
+	(void)arg;
+
+	pca_single_led_set_async(PCA01_D11, false);
 }
