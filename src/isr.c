@@ -2,17 +2,20 @@
 #include <avr/io.h>
 #include <stdint.h>
 
-#include "button.h"
 #include "ft_interrupt.h"
+#include "button.h"
+#include "pca_async.h"
 
-extern t_btn            s1_btn;
-extern t_btn            s2_btn;
-extern volatile uint8_t mode;
+volatile uint8_t g_ticks_2ms = 0;
 
-volatile uint32_t ticks;
 
-FT_ISR(TIMER1_COMPA_vect) {
-	++ticks;
-	btn_poll_accessible(&s1_btn);
-	btn_poll_accessible(&s2_btn);
-}
+// FT_ISR(TIMER1_COMPA_vect)
+// {
+// 	btn_poll_accessible(&g_sw1);
+// 	btn_poll_accessible(&g_sw2);
+//     if (pca_async_ready())
+//         btn_poll_sample(&g_sw3, pca_sw3_pressed() ? PRESSED : LIFTED);
+
+// 	if (g_ticks_2ms != UINT8_MAX)
+// 		++g_ticks_2ms;
+// }

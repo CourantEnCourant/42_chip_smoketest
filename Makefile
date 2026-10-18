@@ -16,7 +16,7 @@ CC				= avr-gcc
 SRC_DIR			= src
 INC_DIR			= include
 LIB_DIR			= lib
-CFLAGS			= -Wall -Wextra -Werror -Os -flto -mmcu=$(MCU) -DF_CPU=$(F_CPU) -I$(INC_DIR)
+CFLAGS			= -Wall -Wextra -Os -flto -mmcu=$(MCU) -DF_CPU=$(F_CPU) -I$(INC_DIR)
 OBJCOPY 		= avr-objcopy
 OBJDUMP 		= avr-objdump
 

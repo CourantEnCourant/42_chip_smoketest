@@ -1,10 +1,23 @@
-#pragma once
+#ifndef DISPLAY_H
+# define DISPLAY_H
 
-#include <stdbool.h>
-#include <stdint.h>
+# include <stdbool.h>
+# include <stdint.h>
 
-// 4 digit seven segment display behind the PCA9555
+# define DISPLAY_BLANK 10
+
 bool display_init(void);
-void display_refresh(void);
+
+void display_tick(void);
+
+void display_service(void);
+
 void display_set_digits(const uint8_t digits[4]);
 void display_set_number(uint16_t value);
+void display_clear(void);
+
+bool display_has_error(void);
+
+void display_set_raw_segments(const uint8_t segments[4]);
+
+#endif

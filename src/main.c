@@ -1,111 +1,104 @@
 #include "main.h"
 
 #include <avr/io.h>
-#include <stddef.h>
+#include <avr/interrupt.h>
 #include <stdint.h>
+#include <stdbool.h>
 
-#include "adc.h"
-#include "button.h"
-#include "date.h"
 #include "display.h"
-#include "ft_interrupt.h"
 #include "i2c.h"
+#include "pca_async.h"
 #include "led.h"
-#include "pin.h"
 #include "uart.h"
+#include "app.h"
+#include "pca.h"
+#include "pca_async.h"
 
-t_btn                    s1_btn;
-t_btn                    s2_btn;
-volatile uint8_t         mode = 0;
-extern volatile uint32_t ticks;
+extern volatile uint8_t g_ticks_2ms;
 
-static uint32_t get_ticks_atomist(void) {
-	uint8_t  sreg = SREG;
-	uint32_t t;
-	ft_cli();
-	t = ticks;
-	SREG = sreg;
-	return t;
+static t_btn g_sw1;
+static t_btn g_sw2;
+static t_btn g_sw3;
+
+FT_ISR(TIMER1_COMPA_vect)
+{
+	if (g_ticks_2ms != UINT8_MAX)
+		++g_ticks_2ms;
 }
 
-int main() {
+// static uint8_t g_mode = 0;
+
+static void buttons_init(void)
+{
+	// direction in
+	SWITCH_DDR &= ~(_BV(SW1) | _BV(SW2));
+
+	// pull up
+	SWITCH_PORT |= _BV(SW1) | _BV(SW2);
+
+	init_btn(&g_sw1, &SWITCH_PIN, SW1, sw1_press_handler, 0, sw1_lift_handler, 0);
+	init_btn(&g_sw2, &SWITCH_PIN, SW2, sw2_press_handler, 0, sw2_lift_handler, 0);
+	init_btn(&g_sw3, 0, 0, sw3_press_handler, 0, sw3_lift_handler, 0);
+}
+
+static bool take_tick(void)
+{
+	uint8_t saved_sreg = SREG;
+	bool ready;
+
+	cli();
+
+	ready = (g_ticks_2ms != 0);
+
+	if (ready)
+		--g_ticks_2ms;
+
+	SREG = saved_sreg;
+	return ready;
+}
+
+int main(void)
+{
 	uart_init();
-	i2c_init();
-	if (!display_init())
-		uart_printstr("display_init failed\r\n");
+
+	i2c_init_async();
+	pca_init_async();
 
 	led_setup();
-	adc_init();
+	buttons_init();
+
+	display_init();
+	app_init();
+
 	timer1_interrupt_init();
-	init_btn(&s1_btn, &SWITCH_PIN, SW1, (t_btn_handler)sw1_press_handler, (void*)&mode, NULL, NULL);
-	init_btn(&s2_btn, &SWITCH_PIN, SW2, (t_btn_handler)sw2_press_handler, (void*)&mode, NULL, NULL);
 	ft_sei();
 
-	enum e_main_state main_state = INIT;
-	t_time            t;
-	display_set_number(8888);
-	while (1) {
-		if (main_state == INIT) {
-			uint32_t t = get_ticks_atomist();
-			if (t >= 2000) {
-				main_state = HOTPATH;
-				led_display_mode(mode);
-				continue;
+
+
+	while (1)
+	{
+		i2c_routine_async();
+		pca_routine_async();
+		display_service();
+
+		if (take_tick())
+		{
+			i2c_monitor_async();
+
+			display_tick();
+			app_tick_2ms();
+			btn_poll_accessible(&g_sw1);
+			btn_poll_accessible(&g_sw2);
+			if (pca_ready_async())
+			{
+				btn_poll(&g_sw3, pca_sw3_pressed_async() ? PRESSED : LIFTED);
 			}
-			if (t < 1500) {
-				led_all_lights_on();
-				display_refresh();
-			} else
-				led_all_lights_off();
-			continue;
+			pca_single_led_set_async(1, 1);
+			pca_write_cathodes_async(0);
 		}
-		if (mode == 0) {
-			// Ref voltage on AVCC
-			clear_bit(ADMUX, REFS1);
-			set_bit(ADMUX, REFS0);
-			// RV1
-			clear_bit(ADMUX, MUX3);
-			clear_bit(ADMUX, MUX1);
-			clear_bit(ADMUX, MUX0);
-			display_set_number(get_adc());
-		} else if (mode == 1) {
-			// Ref voltage on AVCC
-			clear_bit(ADMUX, REFS1);
-			set_bit(ADMUX, REFS0);
-			// LDR
-			clear_bit(ADMUX, MUX3);
-			clear_bit(ADMUX, MUX1);
-			set_bit(ADMUX, MUX0);
-			display_set_number(get_adc());
-		} else if (mode == 2) {
-			// Ref voltage on AVCC
-			clear_bit(ADMUX, REFS1);
-			set_bit(ADMUX, REFS0);
-			// NTC
-			clear_bit(ADMUX, MUX3);
-			set_bit(ADMUX, MUX1);
-			clear_bit(ADMUX, MUX0);
-			display_set_number(get_adc());
-		} else if (mode == 3) {
-			// Internal 1.1V ref
-			set_bit(ADMUX, REFS1);
-			set_bit(ADMUX, REFS0);
-			// Temperature mesurement
-			set_bit(ADMUX, MUX3);
-			clear_bit(ADMUX, MUX1);
-			clear_bit(ADMUX, MUX0);
-			display_set_number((get_adc() - T_OS) / K);
-		} else if (mode == 8) {
-			get_time(&t);
-			display_set_number(t.hour * 100 + t.min);
-		} else if (mode == 9) {
-			get_time(&t);
-			display_set_number(t.day * 100 + t.month);
-		} else if (mode == 10) {
-			get_time(&t);
-			display_set_number(2000 + t.year);
-		} else
-			display_set_number(8888);
-		display_refresh();
+
+		app_service();
 	}
+
+	return 0;
 }

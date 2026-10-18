@@ -137,6 +137,27 @@ FT_ISR(TWI_vect)
 			return ;
 		}
 		break;
+	case TW_MR_SLA_ACK:
+		if (g_i2c.phase == PHASE_I2C_ADDR_R)
+		{
+			g_i2c.phase = PHASE_I2C_READ_BYTE;
+
+			// receive one byte and respond NACK
+			TWCR = _BV(TWINT) | _BV(TWEN) | _BV(TWIE);
+			return;
+		}
+		break;
+
+	case TW_MR_DATA_NACK:
+		if (g_i2c.phase == PHASE_I2C_READ_BYTE)
+		{
+			// save the byte
+			g_i2c.data = TWDR;
+
+			i2c_internal_stop();
+			return;
+		}
+		break;
 	case TW_MT_ARB_LOST:
 		g_i2c.result = RES_I2C_ERROR;
 		g_i2c.phase = PHASE_I2C_IDLE;
