@@ -42,7 +42,6 @@ int main() {
 	ft_sei();
 
 	enum e_main_state main_state = INIT;
-	t_time            t;
 	display_set_number(8888);
 	while (1) {
 		if (main_state == INIT) {
@@ -96,14 +95,19 @@ int main() {
 			clear_bit(ADMUX, MUX0);
 			display_set_number((get_adc() - T_OS) / K);
 		} else if (mode == 8) {
-			get_time(&t);
-			display_set_number(t.hour * 100 + t.min);
+			uint8_t min = 0;
+			uint8_t hours = 0;
+			get_time_reg(&hours, &min);
+			display_set_BCD(hours, min);
 		} else if (mode == 9) {
-			get_time(&t);
-			display_set_number(t.day * 100 + t.month);
+			uint8_t day = 0;
+			uint8_t month = 0;
+			get_date_reg(&day, &month);
+			display_set_BCD(day, month);
 		} else if (mode == 10) {
-			get_time(&t);
-			display_set_number(2000 + t.year);
+			uint8_t year = 0;
+			get_year_reg(&year);
+			display_set_BCD(0x20, year);
 		} else
 			display_set_number(8888);
 		display_refresh();

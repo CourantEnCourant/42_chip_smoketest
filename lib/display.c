@@ -57,3 +57,14 @@ void display_set_number(uint16_t value) {
 
 	display_set_digits(out);
 }
+
+void display_set_BCD(uint8_t val1, uint8_t val2) {
+	uint8_t out[4];
+
+	out[0] = val1 >> 4;
+	out[1] = val1 & 0x0F;
+	out[2] = val2 >> 4;
+	out[3] = val2 & 0x0F;
+
+	display_set_digits(out);
+}

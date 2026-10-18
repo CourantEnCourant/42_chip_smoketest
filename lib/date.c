@@ -6,6 +6,39 @@
 #include "uart.h"
 #include "utils.h"
 
+void get_date_reg(uint8_t *day, uint8_t *month) {
+	i2c_start();
+	i2c_write(PCF8563_ADDR << 1 | WRITE);  // write mode
+	i2c_write(0x05);
+	i2c_start();
+	i2c_write(PCF8563_ADDR << 1 | READ);
+    *day = i2c_read_byte(1) & 0x3F;
+	i2c_read_byte(1);
+	*month = i2c_read_byte(0) & 0x1F;
+	i2c_stop();
+}
+
+void get_year_reg(uint8_t *year) {
+	i2c_start();
+	i2c_write(PCF8563_ADDR << 1 | WRITE);  // write mode
+	i2c_write(0x08);
+	i2c_start();
+	i2c_write(PCF8563_ADDR << 1 | READ);
+    *year = i2c_read_byte(0);
+	i2c_stop();
+}
+
+void get_time_reg(uint8_t *hours, uint8_t *min) {
+	i2c_start();
+	i2c_write(PCF8563_ADDR << 1 | WRITE);  // write mode
+	i2c_write(0x03);
+	i2c_start();
+	i2c_write(PCF8563_ADDR << 1 | READ);
+    *min = i2c_read_byte(1) & 0x7F;
+	*hours = i2c_read_byte(0) & 0x3F;
+	i2c_stop();
+}
+
 void get_time(t_time* t) {
 	i2c_start();
 	i2c_write(PCF8563_ADDR << 1 | WRITE);  // write mode

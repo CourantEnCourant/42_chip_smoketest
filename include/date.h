@@ -20,3 +20,6 @@ void    get_time(t_time* t);
 void    set_time(t_time* t);
 void    print_time(t_time* t);
 uint8_t parse_time(const char* str, t_time* t);
+void 	get_time_reg(uint8_t *hours, uint8_t *min);
+void 	get_date_reg(uint8_t *day, uint8_t *month);
+void	get_year_reg(uint8_t *year);
