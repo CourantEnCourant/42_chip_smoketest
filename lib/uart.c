@@ -1,6 +1,7 @@
 #include "uart.h"
 
 #include <avr/io.h>
+#include <stdint.h>
 
 void uart_init(void) {
 	// 20.2 power reduction register
@@ -41,15 +42,15 @@ void uart_tx_only_printable(char c) {
 }
 
 void print_2digit(uint8_t n) {
-    uart_tx('0' + n / 10);
-    uart_tx('0' + n % 10);
+	uart_tx('0' + n / 10);
+	uart_tx('0' + n % 10);
 }
 
-void uart_putnbr(int n) {
-    if (n < 10) {
-        uart_tx('0' + n);
-        return;
-    }
-    uart_putnbr(n / 10);
-    uart_tx('0' + n % 10);
+void uart_putuint(uint32_t n) {
+	if (n < 10) {
+		uart_tx('0' + n);
+		return;
+	}
+	uart_putuint(n / 10);
+	uart_tx('0' + n % 10);
 }
