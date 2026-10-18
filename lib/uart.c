@@ -27,6 +27,8 @@ void uart_init(void) {
 	UCSR0B = (1 << RXEN0) | (1 << TXEN0);
 	// 8 bit frame
 	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+	// enable RX Complete Interrupt
+	UCSR0B = (1 << RXCIEn);
 }
 
 void uart_printstr(const char str[]) {
@@ -39,13 +41,19 @@ char uart_rx(void) {
 	return UDR0;
 }
 
+// void uart_tx(char c) {
+// 	uint8_t sreg = SREG;
+// 	ft_cli();
+// 	rb_push(&transmit_rb, c);
+// 	// Kick the UDRE interrupt, the ISR drains the buffer
+// 	set_bit(UCSR0B, UDRIE0);
+// 	SREG = sreg;
+// }
+
 void uart_tx(char c) {
-	uint8_t sreg = SREG;
-	ft_cli();
-	rb_push(&transmit_rb, c);
-	// Kick the UDRE interrupt, the ISR drains the buffer
-	set_bit(UCSR0B, UDRIE0);
-	SREG = sreg;
+    while (bit_is_clear(UCSR0A, UDRE0))   // Wait for empty transmit buffer
+        ;    
+    UDR0 = c;                            // Put data into buffer, sends the data
 }
 
 void uart_tx_only_printable(char c) {
