@@ -2,12 +2,13 @@
 
 void spi_init(void)
 {
-	// set MOSI and SCK as output (1)
-	DDRB = _BV(PB3) | _BV(PB5)  | _BV(PB2);
+	// set MOSI and SCK as output (1), keep the other PORTB pins (D1-D4)
+	DDRB |= _BV(PB3) | _BV(PB5) | _BV(PB2);
 
-	// enable SPI, as Master, then set clock at prescaler fck/16
-	SPCR = _BV(SPE) | _BV(MSTR) | _BV(SPR0);
-	// intended overide = impose clear control reg
+	// SPI as Master, clock at prescaler fck/16
+	// SPE is only set between apa102_start/stop: while enabled, MISO (PB4 = D4)
+	// is forced as input
+	SPCR = _BV(MSTR) | _BV(SPR0);
 
 	apa102_start();
 	apa102_color_rgb(B_ZERO, RED);
@@ -45,10 +46,12 @@ void apa102_color_rgb(uint8_t bright, uint32_t color)
 
 void apa102_start(void)
 {
+	SPCR |= _BV(SPE);
 	apa102_transmit_u32(ZERO, ZERO, ZERO, ZERO);
 }
 
 void apa102_stop(void)
 {
 	apa102_transmit_u32(ONE, ONE, ONE, ONE);
+	SPCR &= ~_BV(SPE);
 }
