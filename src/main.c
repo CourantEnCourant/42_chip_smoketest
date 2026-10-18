@@ -144,5 +144,45 @@ int main() {
 				uart_tx(c);
 			}
 		}
+	while (1) {
+		if (mode == 0) {
+			// Ref voltage on AVCC
+			clear_bit(ADMUX, REFS1);
+			set_bit(ADMUX, REFS0);
+			// RV1
+			clear_bit(ADMUX, MUX3);
+			clear_bit(ADMUX, MUX1);
+			clear_bit(ADMUX, MUX0);
+			display_set_number(get_adc());
+		} else if (mode == 1) {
+			// Ref voltage on AVCC
+			clear_bit(ADMUX, REFS1);
+			set_bit(ADMUX, REFS0);
+			// LDR
+			clear_bit(ADMUX, MUX3);
+			clear_bit(ADMUX, MUX1);
+			set_bit(ADMUX, MUX0);
+			display_set_number(get_adc());
+		} else if (mode == 2) {
+			// Ref voltage on AVCC
+			clear_bit(ADMUX, REFS1);
+			set_bit(ADMUX, REFS0);
+			// NTC
+			clear_bit(ADMUX, MUX3);
+			set_bit(ADMUX, MUX1);
+			clear_bit(ADMUX, MUX0);
+			display_set_number(get_adc());
+		} else if (mode == 3) {
+			// Internal 1.1V ref
+			set_bit(ADMUX, REFS1);
+			set_bit(ADMUX, REFS0);
+			// Temperature mesurement
+			set_bit(ADMUX, MUX3);
+			clear_bit(ADMUX, MUX1);
+			clear_bit(ADMUX, MUX0);
+			display_set_number((get_adc() - T_OS) / K);
+		} else
+			display_set_number(8888);
+		display_refresh();
 	}
 }
