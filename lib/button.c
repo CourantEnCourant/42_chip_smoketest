@@ -31,17 +31,28 @@ void init_btn(t_btn*            btn,
 	btn->lift_arg = lift_arg;
 }
 
-void btn_poll(t_btn* btn) {
-	if (read_pin(*btn->port_ptr, btn->pin) == btn->state)
+void btn_poll(t_btn* btn, uint8_t pin_state)
+{
+	if (pin_state == btn->state)
+	{
 		btn->count = 0;
-	else if (btn->count < BTN_COUNT_THRESHOLD)
-		++btn->count;
-	else if (btn->count == BTN_COUNT_THRESHOLD) {
-		btn->state ^= 1;
-		if (btn->state == PRESSED && btn->press_handler)
-			btn->press_handler(btn->press_arg);
-		if (btn->state == LIFTED && btn->lift_handler)
-			btn->lift_handler(btn->lift_arg);
-		++btn->count;
+		return ;
 	}
+	if (btn->count < BTN_COUNT_THRESHOLD)
+	{
+		++btn->count;
+		return ;
+	}
+	// case btn_count == BTN_TRESHOLD
+	btn->state = pin_state;
+	btn->count = 0;
+	if (btn->state == PRESSED && btn->press_handler)
+		btn->press_handler(btn->press_arg);
+	if (btn->state == LIFTED && btn->lift_handler)
+		btn->lift_handler(btn->lift_arg);
+}
+
+void btn_poll_accessible(t_btn* btn)
+{
+	btn_poll(btn, read_pin(*btn->port_ptr, btn->pin));
 }
