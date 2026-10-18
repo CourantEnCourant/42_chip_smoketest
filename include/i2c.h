@@ -77,6 +77,7 @@ uint8_t			i2c_data_async(void);
 
 
 /* legacy blocking interface */
+void    i2c_init(void);
 void    i2c_start(void);
 void    i2c_stop(void);
 void    i2c_wait_twint(void);
