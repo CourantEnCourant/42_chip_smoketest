@@ -28,7 +28,7 @@ void uart_init(void) {
 	// 8 bit frame
 	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
 	// enable RX Complete Interrupt
-	UCSR0B = (1 << RXCIEn);
+	UCSR0B |= (1 << RXCIE0);
 }
 
 void uart_printstr(const char str[]) {
@@ -41,19 +41,13 @@ char uart_rx(void) {
 	return UDR0;
 }
 
-// void uart_tx(char c) {
-// 	uint8_t sreg = SREG;
-// 	ft_cli();
-// 	rb_push(&transmit_rb, c);
-// 	// Kick the UDRE interrupt, the ISR drains the buffer
-// 	set_bit(UCSR0B, UDRIE0);
-// 	SREG = sreg;
-// }
-
 void uart_tx(char c) {
-    while (bit_is_clear(UCSR0A, UDRE0))   // Wait for empty transmit buffer
-        ;    
-    UDR0 = c;                            // Put data into buffer, sends the data
+	uint8_t sreg = SREG;
+	ft_cli();
+	rb_push(&transmit_rb, c);
+	// Kick the UDRE interrupt, the ISR drains the buffer
+	set_bit(UCSR0B, UDRIE0);
+	SREG = sreg;
 }
 
 void uart_tx_only_printable(char c) {
@@ -85,4 +79,23 @@ FT_ISR(USART_UDRE_vect) {
 		return;
 	}
 	UDR0 = c;
+}
+
+uint8_t uart_add_to_buf(char *buf, uint16_t size, uint16_t *i) {
+	char c = UDR0;
+	if (c == '\r' || *i == size - 1) {// end of input
+		buf[*i] = '\0';
+		*i = 0;
+		return 1;
+	} else if (c == 127 && *i > 0) {  // delete char
+		uart_tx('\b');
+		uart_tx(' ');
+		uart_tx('\b');
+		*i -= 1;
+	} else if (32 <= c && c < 127) { // if printable
+		buf[*i] = c;
+		uart_tx(c);
+		*i += 1;
+	}
+	return 0;
 }

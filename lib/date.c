@@ -94,7 +94,7 @@ uint8_t parse_time(const char* str, t_time* t) {
 	t->min = ft_atoi(str + 14);
 	t->sec = ft_atoi(str + 17);
 
-	if (!is_valid_date(t->day, t->month, year)) {
+	if (!is_valid_date(t->day, t->month, year) || !(2000 <= year && year <= 2099)) {
 		uart_printstr("Error: invalid date\r\n");
 		return 0;
 	}

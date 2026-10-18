@@ -17,3 +17,4 @@ void uart_tx(char c);
 void uart_tx_only_printable(char c);
 void print_2digit(uint8_t n);
 void uart_putuint(uint32_t n);
+uint8_t uart_add_to_buf(char *buf, uint16_t size, uint16_t *i);

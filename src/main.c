@@ -13,6 +13,7 @@
 #include "led.h"
 #include "pin.h"
 #include "uart.h"
+#include "date.h"
 
 t_btn                    s1_btn;
 t_btn                    s2_btn;
@@ -29,25 +30,6 @@ static uint32_t get_ticks_atomist(void) {
 }
 #define SIZE 64
 
-static void led_setup() {
-	set_bit(LED_DDR, D1);
-	set_bit(LED_DDR, D2);
-	set_bit(LED_DDR, D3);
-	set_bit(LED_DDR, D4);
-}
-
-volatile uint8_t rx_complete = 0;
-
-FT_ISR(USART_RX_vect) {
-	rx_complete = 1;
-}
-
-t_btn   s1_btn;
-t_btn   s2_btn;
-uint8_t mode = 0;
-t_btn                    s1_btn;
-t_btn                    s2_btn;
-volatile uint8_t         mode = 0;
 extern volatile uint32_t ticks;
 
 static uint32_t get_ticks_atomist(void) {
@@ -58,14 +40,13 @@ static uint32_t get_ticks_atomist(void) {
 	SREG = sreg;
 	return t;
 }
-#define SIZE 64
 
-static void led_setup() {
-	set_bit(LED_DDR, D1);
-	set_bit(LED_DDR, D2);
-	set_bit(LED_DDR, D3);
-	set_bit(LED_DDR, D4);
-}
+// static void led_setup() {
+// 	set_bit(LED_DDR, D1);
+// 	set_bit(LED_DDR, D2);
+// 	set_bit(LED_DDR, D3);
+// 	set_bit(LED_DDR, D4);
+// }
 
 volatile uint8_t rx_complete = 0;
 
@@ -79,6 +60,8 @@ uint8_t mode = 0;
 
 int main() {
 	uint8_t input_complete = 0;
+	char buf[SIZE];
+	uint16_t i = 0;
 
 	uart_init();
 	i2c_init();
@@ -175,6 +158,7 @@ int main() {
 				uart_tx(c);
 			}
 		}
+	uart_printstr("update date (dd/mm/yyyy hh:mm:ss) : ");
 
 	enum e_main_state main_state = INIT;
 	display_set_number(8888);
@@ -232,22 +216,23 @@ int main() {
 		} else
 			display_set_number(8888);
 		display_refresh();
-	uart_printstr("input date :");
-	while (1) {
+
 		if (rx_complete) {
-			char c = UDR0;
-			if (c == '\r' || i == SIZE - 1) {// end of input
-				buf[i] = '\0';
-				input_complete = 1;
-			} else if (c == 127 && i > 0) {  // delete char
-				uart_tx('\b');
-				uart_tx(' ');
-				uart_tx('\b');
-				i--;
-			} else if (32 <= c && c < 127) { // if printable
-				buf[i++] = c;
-				uart_tx(c);
+			input_complete = uart_add_to_buf(buf, SIZE, &i);
+			rx_complete = 0;
+
+			if (input_complete) {
+				uart_printstr("\r\n");
+				t_time t = {0};
+				if (parse_time(buf, &t)) {
+					set_time(&t);
+					uart_printstr("update successful!\r\n");
+				}
+				uart_printstr("update date (dd/mm/yyyy hh:mm:ss) : ");
+				input_complete = 0;
+				
 			}
 		}
+
 	}
 }
