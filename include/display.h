@@ -17,6 +17,7 @@ void display_set_number(uint16_t value);
 void display_clear(void);
 
 bool display_has_error(void);
+bool display_bus_free(void);
 
 void display_set_raw_segments(const uint8_t segments[4]);
 

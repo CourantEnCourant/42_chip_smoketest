@@ -60,6 +60,12 @@ bool display_has_error(void)
 	return g_state == DISPLAY_ERROR;
 }
 
+// display is between two frames, someone else can use the i2c
+bool display_bus_free(void)
+{
+	return g_state == DISPLAY_IDLE && !pca_busy_async();
+}
+
 // the state machine !!!
 void display_service(void)
 {
