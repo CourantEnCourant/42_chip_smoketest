@@ -11,21 +11,14 @@
 #include "i2c.h"
 #include "led.h"
 #include "pca_async.h"
-#include "uart.h"
 #include "spi.h"
+#include "uart.h"
 
 extern volatile uint8_t g_ticks_2ms;
 
 static t_btn g_sw1;
 static t_btn g_sw2;
 static t_btn g_sw3;
-
-FT_ISR(TIMER1_COMPA_vect) {
-	if (g_ticks_2ms != UINT8_MAX)
-		++g_ticks_2ms;
-}
-
-// static uint8_t g_mode = 0;
 
 static void buttons_init(void) {
 	// direction in
