@@ -10,6 +10,7 @@
 #include "display.h"
 #include "i2c.h"
 #include "pca.h"
+#include "pin.h"
 #include "spi.h"
 
 typedef void (*t_mode_callback)(uint8_t);
@@ -33,10 +34,15 @@ static void mode_4_enter(uint8_t mode) {
 	apa102_stop();
 
 	display_set_raw_segments(segments);
+	set_bit(LED_RGB_DDR, D5R);
+	set_bit(LED_RGB_DDR, D5G);
+	set_bit(LED_RGB_DDR, D5B);
+	set_bit(LED_RGB_PORT, D5R);
 }
 
 static uint16_t val = 0;
 static uint8_t  color_id = 1;
+static uint8_t  d5_i = 0;
 
 static void mode_4_2ms(uint8_t mode) {
 	(void)mode;
@@ -60,17 +66,42 @@ static void mode_4_2ms(uint8_t mode) {
 
 	color_id++;
 	color_id %= 3;
+
+	if (d5_i == 2)
+		d5_i = 0;
+	else
+		++d5_i;
+	if (d5_i == 0) {
+		set_bit(LED_RGB_PORT, D5R);
+		clear_bit(LED_RGB_PORT, D5G);
+		clear_bit(LED_RGB_PORT, D5B);
+	} else if (d5_i == 1) {
+		clear_bit(LED_RGB_PORT, D5R);
+		set_bit(LED_RGB_PORT, D5G);
+		clear_bit(LED_RGB_PORT, D5B);
+	} else if (d5_i == 2) {
+		clear_bit(LED_RGB_PORT, D5R);
+		clear_bit(LED_RGB_PORT, D5G);
+		set_bit(LED_RGB_PORT, D5B);
+	}
 }
 
 static void mode_4_exit(uint8_t mode) {
 	(void)mode;
 	color_id = 1;
 	val = 0;
+	d5_i = 0;
 	apa102_start();
 	apa102_color_rgb(B_ZERO, 0);
 	apa102_color_rgb(B_ZERO, 0);
 	apa102_color_rgb(B_ZERO, 0);
 	apa102_stop();
+	clear_bit(LED_RGB_PORT, D5R);
+	clear_bit(LED_RGB_PORT, D5G);
+	clear_bit(LED_RGB_PORT, D5B);
+	clear_bit(LED_RGB_DDR, D5R);
+	clear_bit(LED_RGB_DDR, D5G);
+	clear_bit(LED_RGB_DDR, D5B);
 }
 
 /* ADC modes 0..3 */
