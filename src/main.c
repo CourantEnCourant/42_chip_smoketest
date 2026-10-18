@@ -97,13 +97,13 @@ int main() {
 			display_set_number((get_adc() - T_OS) / K);
 		} else if (mode == 8) {
 			get_time(&t);
-			display_set_number(t.hour * 100 + t.min);
+			display_set_date(t.hour * 100 + t.min);
 		} else if (mode == 9) {
 			get_time(&t);
-			display_set_number(t.day * 100 + t.month);
+			display_set_date(t.day * 100 + t.month);
 		} else if (mode == 10) {
 			get_time(&t);
-			display_set_number(2000 + t.year);
+			display_set_date(2000 + t.year);
 		} else
 			display_set_number(8888);
 		display_refresh();

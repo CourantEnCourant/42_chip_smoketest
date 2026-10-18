@@ -57,3 +57,14 @@ void display_set_number(uint16_t value) {
 
 	display_set_digits(out);
 }
+
+void display_set_date(uint16_t value) {
+	uint8_t out[4];
+
+	out[0] = value / 1000 % 10;
+	out[1] = value / 100 % 10;
+	out[2] = value / 10 % 10;
+	out[3] = value % 10;
+
+	display_set_digits(out);
+}
