@@ -9,6 +9,7 @@
 #include "display.h"
 #include "i2c.h"
 #include "pca.h"
+#include "spi.h"
 
 typedef void (*t_mode_callback)(uint8_t);
 
@@ -31,7 +32,38 @@ static void mode_4_enter(uint8_t mode)
 
 	const uint8_t segments[4] = {PCA16_G,SEG_FOUR,SEG_TWO,PCA16_G};
 
+	apa102_start();
+	apa102_color_rgb(B_LOW, RED);
+	apa102_color_rgb(B_LOW, GREEN);
+	apa102_color_rgb(B_LOW, BLUE);
+	apa102_stop();
+
 	display_set_raw_segments(segments);
+}
+
+static void mode_4_2ms(uint8_t mode)
+{
+	(void)mode;
+
+	static uint8_t max_u8_reached = 0;
+	static uint8_t val = 0;
+	static uint8_t state = 0;
+
+	if (val == 250 && max_u8_reached == 0)
+	{
+		
+	}
+}
+
+static void mode_4_exit(uint8_t mode)
+{
+	(void)mode;
+
+	apa102_start();
+	apa102_color_rgb(B_ZERO, RED);
+	apa102_color_rgb(B_ZERO, GREEN);
+	apa102_color_rgb(B_ZERO, BLUE);
+	apa102_stop();
 }
 
 /* ADC modes 0..3 */
@@ -174,7 +206,7 @@ static const t_mode_ops g_modes[APP_MODE_COUNT] = {
 	{mode_adc_enter,     mode_adc_tick, 0, 0},                // 1 LDR
 	{mode_adc_enter,     mode_adc_tick, 0, 0},                // 2 NTC
 	{mode_adc_enter,     mode_adc_tick, 0, 0},                // 3 MCU temp
-	{mode_4_enter,       0, 0, 0},                            // 4 RGB
+	{mode_4_enter,       0, 0, mode_4_exit},                            // 4 RGB
 	{mode_pending_enter, 0, 0, 0},                            // 5 Celsius
 	{mode_pending_enter, 0, 0, 0},                            // 6 Fahrenheit
 	{mode_pending_enter, 0, 0, 0},                            // 7 Humidity
