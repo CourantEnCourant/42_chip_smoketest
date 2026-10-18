@@ -76,11 +76,7 @@ int main(void) {
 			if (pca_ready_async()) {
 				btn_poll(&g_sw3, pca_sw3_pressed_async() ? PRESSED : LIFTED);
 			}
-			// pca_single_led_set_async(1, 1);
-			// pca_write_cathodes_async(0);
 		}
-		// before display_service: a mode collects its i2c result
-		// before the display can start the next frame
 		app_service();
 		display_service();
 	}
