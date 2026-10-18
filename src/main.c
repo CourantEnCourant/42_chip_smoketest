@@ -6,6 +6,7 @@
 
 #include "adc.h"
 #include "button.h"
+#include "date.h"
 #include "display.h"
 #include "ft_interrupt.h"
 #include "i2c.h"
@@ -41,6 +42,7 @@ int main() {
 	ft_sei();
 
 	enum e_main_state main_state = INIT;
+	t_time            t;
 	display_set_number(8888);
 	while (1) {
 		if (main_state == INIT) {
@@ -93,6 +95,15 @@ int main() {
 			clear_bit(ADMUX, MUX1);
 			clear_bit(ADMUX, MUX0);
 			display_set_number((get_adc() - T_OS) / K);
+		} else if (mode == 8) {
+			get_time(&t);
+			display_set_number(t.hour * 100 + t.min);
+		} else if (mode == 9) {
+			get_time(&t);
+			display_set_number(t.day * 100 + t.month);
+		} else if (mode == 10) {
+			get_time(&t);
+			display_set_number(2000 + t.year);
 		} else
 			display_set_number(8888);
 		display_refresh();
