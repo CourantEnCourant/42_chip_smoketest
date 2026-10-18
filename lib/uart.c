@@ -30,8 +30,6 @@ void uart_init(void) {
 	UCSR0B = (1 << RXEN0) | (1 << TXEN0);
 	// 8 bit frame
 	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
-	// enable rx interrupt
-	UCSR0B |= (1 << RXCIE0);
 }
 
 void uart_printstr(const char str[]) {
@@ -84,13 +82,7 @@ FT_ISR(USART_UDRE_vect) {
 	UDR0 = c;
 }
 
-volatile uint8_t rx_complete = 0;
-
-FT_ISR(USART_RX_vect) {
-	rx_complete = 1;
-}
-
-static uint8_t uart_add_to_buf(char *buf, uint16_t size, uint16_t *i) {
+static uint8_t uart_add_to_buf(char *buf, uint8_t size, uint8_t *i) {
 	char c = UDR0;
 	if (c == '\r' || *i == size - 1) {// end of input
 		buf[*i] = '\0';
@@ -109,15 +101,13 @@ static uint8_t uart_add_to_buf(char *buf, uint16_t size, uint16_t *i) {
 	return 0;
 }
 
-char buf[SIZE];
-uint16_t i = 0;
-
 void uart_input_routine(void) {
-	if (rx_complete) {
-		uint8_t input_complete = uart_add_to_buf(buf, SIZE, &i);
-		rx_complete = 0;
+	static char    buf[SIZE];
+	static uint8_t i = 0;
 
-		if (input_complete) {
+	// RXC0 is cleared by reading UDR0 in uart_add_to_buf, no ISR needed
+	if (bit_is_set(UCSR0A, RXC0)) {
+		if (uart_add_to_buf(buf, SIZE, &i)) {
 			uart_printstr("\r\n");
 			t_time t = {0};
 			if (parse_time(buf, &t)) {
