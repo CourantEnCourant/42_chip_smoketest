@@ -6,6 +6,11 @@
 # define F_CPU 16000000UL
 #endif
 
+enum e_main_state {
+	INIT,
+	HOTPATH,
+};
+
 void sw1_press_handler(uint8_t* arg);
 void sw1_lift_handler(void* arg);
 void sw2_press_handler(uint8_t* arg);
