@@ -10,6 +10,7 @@
 #include "i2c.h"
 #include "pca.h"
 #include "spi.h"
+#include "aht20.h"
 
 typedef void (*t_mode_callback)(uint8_t);
 
@@ -212,6 +213,74 @@ static void mode_rtc_service(uint8_t mode)
 		g_rtc.waiting = true;
 }
 
+#include "aht20.h"
+
+#define AHT_POLL_TICKS   500u   // 1 s between measurements
+#define AHT_WAIT_TICKS    40u   // 80 ms conversion time
+
+static struct {
+    int16_t  temp_x10;
+    uint16_t hum_x10;
+    uint16_t elapsed;
+    bool     waiting;   // trigger sent, conversion running
+    bool     valid;
+} g_aht;
+
+static void aht_show(uint8_t mode)
+{
+    if (!g_aht.valid) { display_set_number(8888); return; }  // or a "----" pattern
+
+    if (mode == 5)
+        display_set_number(g_aht.temp_x10 / 10);                  // Celsius
+    else if (mode == 6)
+        display_set_number((g_aht.temp_x10 * 9 / 5 + 320) / 10);  // Fahrenheit
+    else
+        display_set_number(g_aht.hum_x10 / 10);                   // Humidity %
+}
+
+static void mode_aht_enter(uint8_t mode)
+{
+    g_aht.waiting = false;
+    g_aht.elapsed = AHT_POLL_TICKS;   // measure immediately
+    aht_show(mode);
+}
+
+static void mode_aht_tick(uint8_t mode)
+{
+    (void)mode;
+    if (g_aht.elapsed < 0xFFFF)
+        g_aht.elapsed++;
+}
+
+static void mode_aht_service(uint8_t mode)
+{
+    if (i2c_is_busy_async() || !display_bus_free())
+        return;
+
+    if (!g_aht.waiting)
+    {
+        if (g_aht.elapsed < AHT_POLL_TICKS)
+            return;
+        trigger_measure();
+        g_aht.waiting = true;
+        g_aht.elapsed = 0;
+    }
+    else if (g_aht.elapsed >= AHT_WAIT_TICKS)
+    {
+        uint32_t sh, st;
+        uint8_t  status = get_mesure(&sh, &st);
+
+        if (status & 0x80)            // still busy, retry at next service
+            return;
+        g_aht.temp_x10 = aht20_temp_x10(st);
+        g_aht.hum_x10  = aht20_hum_x10(sh);
+        g_aht.valid    = true;
+        g_aht.waiting  = false;
+        g_aht.elapsed  = 0;
+        aht_show(mode);
+    }
+}
+
 /* to update
 	enter   : once when entering the mode
 	tick    : every 2ms while the mode is active
@@ -223,10 +292,10 @@ static const t_mode_ops g_modes[APP_MODE_COUNT] = {
 	{mode_adc_enter,     mode_adc_tick, 0, 0},                // 1 LDR
 	{mode_adc_enter,     mode_adc_tick, 0, 0},                // 2 NTC
 	{mode_adc_enter,     mode_adc_tick, 0, 0},                // 3 MCU temp
-	{mode_4_enter,       mode_4_2ms, 0, mode_4_exit},                            // 4 RGB
-	{mode_pending_enter, 0, 0, 0},                            // 5 Celsius
-	{mode_pending_enter, 0, 0, 0},                            // 6 Fahrenheit
-	{mode_pending_enter, 0, 0, 0},                            // 7 Humidity
+	{mode_4_enter,       0, 0, 0},                            // 4 RGB
+	{mode_aht_enter, mode_aht_tick, mode_aht_service, 0},  // 5 Celsius
+	{mode_aht_enter, mode_aht_tick, mode_aht_service, 0},  // 6 Fahrenheit
+	{mode_aht_enter, mode_aht_tick, mode_aht_service, 0},  // 7 Humidity
 	{mode_rtc_enter,     mode_rtc_tick, mode_rtc_service, 0}, // 8 RTC time
 	{mode_rtc_enter,     mode_rtc_tick, mode_rtc_service, 0}, // 9 Day/month
 	{mode_rtc_enter,     mode_rtc_tick, mode_rtc_service, 0}  // 10 Year
